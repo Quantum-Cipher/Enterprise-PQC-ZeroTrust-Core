@@ -1,0 +1,25 @@
+name: Security Audit
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/security/**'
+      - '.github/workflows/security.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Ensure secret audit is executable
+        run: chmod +x ./scripts/security/secret_audit.sh
+
+      - name: Run secret audit
+        run: ./scripts/security/secret_audit.sh

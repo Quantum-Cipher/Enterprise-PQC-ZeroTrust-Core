@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'fix/**'
+      - 'feat/**'
+      - 'chore/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  security-and-python:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Show Python version
+        run: python --version
+
+      - name: Ensure secret audit is executable
+        run: chmod +x ./scripts/security/secret_audit.sh
+
+      - name: Run secret audit
+        run: ./scripts/security/secret_audit.sh
+
+      - name: Install app dependencies if requirements.txt exists
+        run: |
+          if [ -f requirements.txt ]; then
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+          else
+            echo "No requirements.txt found, skipping dependency install."
+          fi
+
+      - name: Smoke import main module if present
+        run: |
+          if [ -f main.py ]; then
+            python -m py_compile main.py
+          else
+            echo "No main.py found, skipping Python compile smoke test."
+          fi
