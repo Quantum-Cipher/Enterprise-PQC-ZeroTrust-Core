@@ -8,6 +8,10 @@ on:
   schedule:
     - cron: '0 3 * * 1'
 
+concurrency:
+  group: codeql-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
 jobs:
   analyze:
     runs-on: ubuntu-latest

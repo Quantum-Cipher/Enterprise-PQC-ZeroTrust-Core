@@ -24,7 +24,6 @@ MATCHES="$(
     --exclude-dir=__pycache__ \
     --exclude-dir=threat-detector-flow \
     2>/dev/null \
-    | grep -v '^Binary file' \
     || true
 )"
 
