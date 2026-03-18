@@ -1,2 +1,5 @@
 signing-key.asc
 *.asc
+__pycache__/
+*.pyc
+.pytest_cache/

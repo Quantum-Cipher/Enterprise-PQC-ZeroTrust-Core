@@ -7,8 +7,8 @@ allowlist.  Copyleft licenses (GPL, AGPL, LGPL, EUPL, MPL, SSPL, OSL, CPAL,
 CC-BY-SA) are flagged as enterprise risks.
 
 Exit codes:
-    0 — all licences are permissive or no dependency files found
-    1 — one or more copyleft / unknown licences detected
+    0 — all licenses are permissive or no dependency files found
+    1 — one or more copyleft / unknown licenses detected
 """
 
 from __future__ import annotations
@@ -106,7 +106,7 @@ def parse_go_mod(path: Path) -> list[str]:
 
 
 def pip_license(package: str) -> str:
-    """Query *pip show* for the licence string of *package*."""
+    """Query *pip show* for the license string of *package*."""
     try:
         out = subprocess.run(
             ["pip", "show", package],
@@ -178,7 +178,7 @@ def main() -> int:
         return 1
 
     print(
-        "License Check Passed: all detected licences are permissive or need manual review."
+        "License Check Passed: all detected licenses are permissive or need manual review."
     )
     return 0
 
