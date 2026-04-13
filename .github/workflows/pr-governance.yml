@@ -1,0 +1,120 @@
+name: PR Governance
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: pr-governance-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  # ── 1. Secret & Credential Scan ────────────────────────────────────────
+  secret-scan:
+    name: "🔒 Secret Scan"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Ensure secret audit is executable
+        run: chmod +x ./scripts/security/secret_audit.sh
+
+      - name: Run secret audit
+        run: ./scripts/security/secret_audit.sh
+
+  # ── 2. Enterprise License Enforcement ──────────────────────────────────
+  license-check:
+    name: "📜 License Enforcement"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies (if any)
+        run: |
+          if [ -f requirements.txt ]; then
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+          fi
+
+      - name: Run license checker
+        run: python scripts/governance/license_checker.py
+
+  # ── 3. Code Quality ────────────────────────────────────────────────────
+  code-quality:
+    name: "✨ Code Quality"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install formatter
+        run: pip install black
+
+      - name: Check formatting (Black)
+        run: black --check .
+
+      - name: Compile-check Python files
+        run: |
+          errors=0
+          for f in $(find . -name '*.py' -not -path './.git/*' -not -path './.venv/*'); do
+            if ! python -m py_compile "$f" 2>/dev/null; then
+              echo "COMPILE ERROR: $f"
+              errors=$((errors + 1))
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "FAILURE: $errors file(s) failed compile check."
+            exit 1
+          fi
+          echo "All Python files compiled successfully."
+
+  # ── 4. Test Coverage Gate ──────────────────────────────────────────────
+  test-coverage:
+    name: "🧪 Test Coverage"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Discover and run tests
+        run: |
+          TEST_COUNT=$(find . -name 'test_*.py' -o -name '*_test.py' | grep -c '' || true)
+          if [ "$TEST_COUNT" -eq 0 ]; then
+            echo "⚠️  No test files detected — skipping test run."
+            echo "Note: PRs adding new features should include tests."
+          else
+            python -m pytest --tb=short -q
+          fi
